@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Leaf Disease Classification</title>
+    <style>
+        .disease-container {
+            text-align: center;
+            padding: 20px;
+        }
+        .disease-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .image-preview {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="disease-container">
+        <h2 class="disease-label">Plant Disease Classification</h2>
+        <p>Upload an image of a plant to predict the disease (if any):</p>
+        <input type="file" accept=".jpg" id="image-upload" name="image-upload" />
+        <br>
+        <div class="image-preview"></div>  <br>
+        <button type="button" id="predict-disease">Predict Disease</button>
+    </div>
+</body>
+</html>
