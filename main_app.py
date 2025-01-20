@@ -1,0 +1,151 @@
+
+# ###################################
+import streamlit as st
+import pandas as pd
+from PIL import Image
+import base64
+
+# Function to set background image
+def set_background(image_path):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    bg_image_css = f"""
+    <style>
+    .stApp {{
+        background-image: url('data:image/jpg;base64,{encoded_string}');
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: center;
+    }}
+    </style>
+    """
+    
+    st.markdown(bg_image_css, unsafe_allow_html=True)
+
+# Existing CSS
+css = """
+<style>
+   @import url('https://fonts.googleapis.com/css2?family=Pirata+One&display=swap');
+
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    input[type="number"] {
+            width: calc(100% - 2rem);
+            padding: 10px 25px;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+    .streamlit-expanderHeader {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    .css-1v3fvcr {
+        margin-bottom: 1rem;
+    }
+    h1{
+     font-family: "Pirata One", sans-serif;
+     font-size:55px;
+    }
+    .stButton button {
+        background-color: #03b403;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .stButton button:hover {
+        background-color: #008000;
+        color:#fff;
+    }
+    .css-1l02rfh {
+        margin: 0;
+    }
+
+    .stSelectbox div[data-baseweb="select"] > div {
+        font-size: 20px;
+    }
+</style>
+"""
+st.markdown(css, unsafe_allow_html=True)
+
+# Import modules for prediction tasks
+from crop_recommendation import load_model, recommend_crop
+from plant_disease_prediction import load_model as load_disease_model, predict_disease as predict_plant_disease
+
+# Load all models for efficiency
+crop_model, crop_scaler = load_model()
+disease_model = load_disease_model()
+
+# Loading the Crop Yield prediction dataset
+df1 = pd.read_csv('Datasets/Crop_Yield_dataset/prty.csv')
+
+# Define the Streamlit app
+st.title("CropGuardian: Nurturing Growth🌽")
+
+# Create a top navigation menu
+mode = st.selectbox("", ["Home", "Crop Recommendation", "Plant Disease Classification"])
+
+if mode == "Home":
+    set_background('image/backimg2.jpg')  # Your image path
+    st.markdown("""
+        <div style="background: rgba(198, 241, 170, 0.973); padding: 2rem; border-radius: 10px;">
+            <h1 style="text-align: center; color: #2E8B57;">Welcome to CropGuardian</h1>
+            <p style="text-align: center; font-size: 1.2rem; color:#555; font-weight:600;">
+                Your ultimate companion for smart farming solutions. Navigate through the options above to explore crop recommendations,Fertilizer Suggestions and plant disease classifications tailored just for you!
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+elif mode == "Crop Recommendation":
+    st.header("Crop Recommendation")
+    st.write("Enter the following factors to get a recommended crop:")
+
+    N = st.number_input("Nitrogen requirements (kg/ha):", min_value=0.0, max_value=300.0, value=50.0)
+    P = st.number_input("Phosphorus requirements (kg/ha):", min_value=0.0, max_value=300.0, value=30.0)
+    K = st.number_input("Potassium requirements (kg/ha):", min_value=0.0, max_value=300.0, value=40.0)
+    temperature = st.number_input("Average Temperature (°C):", min_value=0.0, max_value=50.0, value=25.0)
+    humidity = st.number_input("Humidity (%):", min_value=0.0, max_value=100.0, value=50.0)
+    ph = st.number_input("pH value of soil:", min_value=0.0, max_value=14.0, value=6.5)
+    rainfall = st.number_input("Annual Rainfall (mm per year):", min_value=0.0, max_value=5000.0, value=1000.0)
+
+    user_input = pd.DataFrame({
+        'N': [N],
+        'P': [P],
+        'K': [K],
+        'temperature': [temperature],
+        'humidity': [humidity],
+        'ph': [ph],
+        'rainfall': [rainfall]
+    })
+
+    if st.button("Recommend Crop"):
+        try:
+            prediction = recommend_crop(user_input, crop_model, crop_scaler)
+            st.success(f"Recommended Crop: **{prediction}**")
+        except Exception as e:
+            st.error(f"Error: {e}")
+
+elif mode == "Plant Disease Classification":
+    st.header("Plant Disease Classification")
+    st.write("Upload an image of a plant leaf to predict the disease (if any).")
+
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Image', use_container_width=True)
+
+        if st.button("Predict Disease"):
+            image.save('image/image.png')
+            try:
+                predictions = predict_plant_disease('image', disease_model)
+                st.success(f"Predicted Disease: **{predictions}**")
+            except Exception as e:
+                st.error(f"Error: {e}")
